@@ -18,6 +18,7 @@ function degrees_to_radians(degrees)
   return degrees * (pi/180);
 }
 
+// function that calculates the fair play score
 function calculate_fair_play_score() {
     let numOfRedCards = 0;
     let numOfYellowCards = 0;
@@ -34,8 +35,24 @@ function calculate_fair_play_score() {
     }
 
     let numerator = - (numOfYellowCards + 10 * numOfRedCards);
-    let score = 100 * (2 ** (numerator / 10))
+    let score = 100 * (2 ** (numerator / 10));
     return score + numOfVARCards * 10;
+}
+
+// function that checks for collision between the ball and the card
+function checkColision(ball, card){
+    if (!card.visible) {
+        return false;
+    }
+    const cardBox = new THREE.Box3().setFromObject(card);
+
+    // Calculate the bounding sphere of the ball
+    const ballSphere = new THREE.Sphere();
+    ball.geometry.computeBoundingSphere();
+    ballSphere.copy(ball.geometry.boundingSphere).applyMatrix4(ball.matrixWorld);
+
+    // Check for intersection
+    return ballSphere.intersectsBox(cardBox);
 }
 
 
@@ -63,23 +80,23 @@ const textureLoader = new THREE.TextureLoader();
 const ballTexture = textureLoader.load("src/textures/soccer_ball.jpg");
 const redCardTexture = textureLoader.load("src/textures/red_card.jpg");
 const yellowCardTexture = textureLoader.load("src/textures/yellow_card.jpg");
-const argentinaFlagTexture = textureLoader.load('https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Flag_of_Argentina.svg/1200px-Flag_of_Argentina.svg.png');
+const argentinaFlagTexture = textureLoader.load('src/textures/argentina_flag.png');
 const varTexture = textureLoader.load('src/textures/var_card.jpg');
 
 
 
 // TODO: Add Lighting
-const target1 = new THREE.Object3D();
-target1.position.set(0,0,0);
-const target2 = new THREE.Object3D();
-target2.position.set(0,0,100);
-const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.5);
+const origin = new THREE.Object3D();
+origin.position.set(0,0,0);
+const target = new THREE.Object3D();
+target.position.set(0,0,100);
+const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.7);
 directionalLight1.position.set(0,50,50);
-directionalLight1.target = target1;
-const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+directionalLight1.target = origin;
+const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.7);
 directionalLight2.position.set(0,50,50);
-directionalLight2.target = target2;
-const ambientLight = new THREE.AmbientLight(0x404040, 0.1);
+directionalLight2.target = target;
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
 
 scene.add(directionalLight1);
 scene.add(directionalLight2);
@@ -166,7 +183,7 @@ back_net_translation_matrix.makeTranslation(0,0,-11.547);
 back_net_matrix.multiplyMatrices(back_net_translation_matrix, back_net_rotation_matrix);
 
 const back_net_geometry = new THREE.PlaneGeometry( 120, 46.188 );
-const nets_material = new THREE.MeshPhongMaterial( {color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.5} );
+const nets_material = new THREE.MeshPhongMaterial( {color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.4} );
 const back_net = new THREE.Mesh( back_net_geometry, nets_material );
 
 back_net.applyMatrix4(back_net_matrix);
@@ -343,15 +360,17 @@ const yellowCard2 = new Card('Yellow', yellowCardTexture);
 const yellowCard3 = new Card('Yellow', yellowCardTexture);
 const varCard1 = new Card('VAR', varTexture);
 const varCard2 = new Card('VAR', varTexture);
+const varCard3 = new Card('VAR', varTexture);
 
 const cardPos1 = rightWingerRoute.getPoint(0.1);
-const cardPos2 = rightWingerRoute.getPoint(0.5);
+const cardPos2 = centerForwardRoute.getPoint(0.5);
 const cardPos3 = rightWingerRoute.getPoint(0.3);
 const cardPos4 = leftWingerRoute.getPoint(0.15);
 const cardPos5 = leftWingerRoute.getPoint(0.7);
 const cardPos6 = leftWingerRoute.getPoint(0.6);
 const cardPos7 = leftWingerRoute.getPoint(0.4);
-const cardPos8 = rightWingerRoute.getPoint(0.2);
+const cardPos8 = centerForwardRoute.getPoint(0.2);
+const cardPos9 = rightWingerRoute.getPoint(0.5);
 
 
 yellowCard1.position.copy(cardPos1);
@@ -362,8 +381,9 @@ yellowCard3.position.copy(cardPos5);
 redCard3.position.copy(cardPos6);
 varCard1.position.copy(cardPos7);
 varCard2.position.copy(cardPos8);
+varCard3.position.copy(cardPos9);
 
-const cardsList = [yellowCard1, redCard1, varCard1 ,yellowCard2, redCard2, varCard2, yellowCard3, redCard3];
+const cardsList = [yellowCard1, redCard1, varCard1 ,yellowCard2, redCard2, varCard2, yellowCard3, redCard3, varCard3];
 
 for (const card of cardsList) {
     scene.add(card);
@@ -381,28 +401,11 @@ const handle_keydown = (e) => {
 		currentRouteIndex = (currentRouteIndex + 2) % 3;
 	} else if (e.code == 'ArrowRight') {
         currentRouteIndex = (currentRouteIndex + 1) % 3;
-	} else if (e.code == 'ArrowUp') {
+	} else if (e.code == 'Enter') {
         gameStart = true;
-        currentRouteIndex = 1;
     }
 }
 document.addEventListener('keydown', handle_keydown);
-
-
-function checkColision(ball, card){
-    if (!card.visible) {
-        return false;
-    }
-    const cardBox = new THREE.Box3().setFromObject(card);
-
-    // Calculate the bounding sphere of the ball
-    const ballSphere = new THREE.Sphere();
-    ball.geometry.computeBoundingSphere();
-    ballSphere.copy(ball.geometry.boundingSphere).applyMatrix4(ball.matrixWorld);
-
-    // Check for intersection
-    return ballSphere.intersectsBox(cardBox);
-}
 
 
 function animate() {
@@ -410,8 +413,8 @@ function animate() {
 
 	// TODO: Animation for the ball's position
 	if (gameStart) {
-        const ballRotationMatrixY = new THREE.Matrix4().makeRotationY(degrees_to_radians(1));
-        const ballRotationMatrixX = new THREE.Matrix4().makeRotationX(degrees_to_radians(1));
+        const ballRotationMatrixY = new THREE.Matrix4().makeRotationY(degrees_to_radians(2));
+        const ballRotationMatrixX = new THREE.Matrix4().makeRotationX(degrees_to_radians(2));
 
         ball.applyMatrix4(ballRotationMatrixY);
         ball.applyMatrix4(ballRotationMatrixX);
